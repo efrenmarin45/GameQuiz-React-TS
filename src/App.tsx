@@ -4,7 +4,7 @@ import { Difficulty, fetchQuizQuestions, QuestionState } from "./api";
 import QuestionCard from "./components/QuestionCard";
 import { GlobalStyle, Wrapper } from "./styles";
 
-const TOTAL_QUESTIONS = 5;
+const TOTAL_QUESTIONS = 20;
 
 export type AnswerObject = {
 	question: string;
