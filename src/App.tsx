@@ -1,35 +1,124 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { CSSProperties, useState } from "react";
+import { PacmanLoader } from "react-spinners";
+import { Difficulty, fetchQuizQuestions, QuestionState } from "./api";
+import QuestionCard from "./components/QuestionCard";
+import { GlobalStyle, Wrapper } from "./styles";
 
-function App() {
-  const [count, setCount] = useState(0)
+const TOTAL_QUESTIONS = 5;
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
+export type AnswerObject = {
+	question: string;
+	answer: string;
+	correct: boolean;
+	correctAnswer: string;
+};
 
-export default App
+const spinStyle: CSSProperties = {
+	display: "block",
+	marginTop: "100px",
+	marginRight: "80px",
+};
+
+const App = () => {
+	const [loading, setLoading] = useState(false);
+	const [questions, setQuestions] = useState<QuestionState[]>([]);
+	const [number, setNumber] = useState(0);
+	const [userAnswers, setUserAnswers] = useState<AnswerObject[]>([]);
+	const [score, setScore] = useState(0);
+	const [gameOver, setGameOver] = useState(true);
+
+	const startQuiz = async () => {
+		setLoading(true);
+		setGameOver(false);
+
+		try {
+			const newQuestions = await fetchQuizQuestions(
+				TOTAL_QUESTIONS,
+				Difficulty.EASY
+			);
+
+			setQuestions(newQuestions);
+			setScore(0);
+			setUserAnswers([]);
+			setNumber(0);
+			setTimeout(() => setLoading(false), 3000);
+		} catch (err) {
+			console.log("Oops, looks like I caught an error: ", err);
+		}
+	};
+
+	const checkAnswer = (e: React.MouseEvent<HTMLButtonElement>) => {
+		if (!gameOver) {
+			//User Answer
+			const answer = e.currentTarget.value;
+
+			//Check answer against correct answer
+			const correct = questions[number].correct_answer === answer;
+
+			//Add Score if answer was correct
+			if (correct) setScore((prev) => prev + 1);
+
+			//Save answer in the array for user answers
+			const answerObject = {
+				question: questions[number].question,
+				answer: answer,
+				correct: correct,
+				correctAnswer: questions[number].correct_answer,
+			};
+			setUserAnswers((prev) => [...prev, answerObject]);
+		}
+	};
+
+	const nextQuestion = () => {
+		const nextQuestion = number + 1;
+		if (nextQuestion === TOTAL_QUESTIONS) {
+			setGameOver(true);
+		} else {
+			setNumber(nextQuestion);
+		}
+	};
+
+	return (
+		<>
+			<GlobalStyle />
+			<Wrapper>
+				<h1>Video Game Quiz</h1>
+				{gameOver || userAnswers.length === TOTAL_QUESTIONS ? (
+					<button className='start' onClick={startQuiz}>
+						{!gameOver ? "Try Again?" : "Start"}
+					</button>
+				) : null}
+				{!gameOver ? <p className='score'>Score: {score}</p> : null}
+				{loading && (
+					<PacmanLoader
+						cssOverride={spinStyle}
+						size={35}
+						color='#e3c646'
+						loading
+					/>
+				)}
+				{loading && <p className='loadingText'>Loading</p>}
+				{!loading && !gameOver && (
+					<QuestionCard
+						questionNum={number + 1}
+						totalQuestions={TOTAL_QUESTIONS}
+						question={questions[number].question}
+						answers={questions[number].answers}
+						userAnswer={userAnswers ? userAnswers[number] : undefined}
+						callback={checkAnswer}
+					/>
+				)}
+				{!gameOver &&
+				!loading &&
+				userAnswers.length === number + 1 &&
+				number !== TOTAL_QUESTIONS - 1 ? (
+					<button className='next' onClick={nextQuestion}>
+						Next Question
+					</button>
+				) : null}
+			</Wrapper>
+		</>
+	);
+};
+
+export default App;
