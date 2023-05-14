@@ -55,7 +55,7 @@ export const Wrapper = styled.div`
 	}
 
 	h1 {
-		font-family: "Staatliches", sans serif;
+		font-family: "Staatliches", arial;
 		background-color: #fff;
 		border-radius: 20px;
 		padding: 5px 25px;
